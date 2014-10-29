@@ -44,14 +44,18 @@ func (s *Server) Run() error {
 	m := martini.Classic()
 
 	cookieStore := sessions.NewCookieStore([]byte(s.Conf.Auth.Session.Key))
-	if domain := s.Conf.Auth.Session.CookieDomain; domain != "" {
-		cookieStore.Options(sessions.Options{Domain: domain})
+	domain := s.Conf.Auth.Session.CookieDomain
+	if domain != "" {
+		cookieStore.Options(sessions.Options{Path: "/", Domain: domain})
+	} else {
+		cookieStore.Options(sessions.Options{Path: "/"})
 	}
 	m.Use(sessions.Sessions("session", cookieStore))
 
 	if s.Conf.Auth.Info.Service != noAuthServiceName {
 		a := NewAuthenticator(s.Conf)
 		m.Use(a.Handler())
+		m.Use(rewriteBaseDomain(domain))
 		m.Use(loginRequired())
 		m.Use(restrictRequest(s.Conf.Restrictions, a))
 	}
@@ -237,5 +241,20 @@ func loginRequired() martini.Handler {
 			return
 		}
 		c.Invoke(oauth2.LoginRequired)
+	}
+}
+
+func rewriteBaseDomain(domain string) martini.Handler {
+	return func(s sessions.Session, c martini.Context, w http.ResponseWriter, r *http.Request) {
+		reqhost := s.Get("ReqHost")
+		if reqhost == nil {
+			return
+		}
+		if r.Host != domain {
+			return
+		}
+		s.Delete("ReqHost")
+		http.Redirect(w, r, "https://"+reqhost.(string)+r.RequestURI, 302)
+		log.Printf("Redirect")
 	}
 }
