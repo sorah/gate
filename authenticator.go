@@ -65,14 +65,14 @@ type GoogleAuth struct {
 }
 
 func (a *GoogleAuth) Authenticate(domain []string, c martini.Context, tokens oauth2.Tokens, w http.ResponseWriter, r *http.Request) {
-	extra := tokens.ExtraData()
-	if _, ok := extra["id_token"]; ok == false {
+	idToken := tokens.Extra("id_token")
+	if len(idToken) == 0 {
 		log.Printf("id_token not found")
 		forbidden(w)
 		return
 	}
 
-	keys := strings.Split(extra["id_token"], ".")
+	keys := strings.Split(idToken, ".")
 	if len(keys) < 2 {
 		log.Printf("invalid id_token")
 		forbidden(w)
