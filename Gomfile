@@ -4,4 +4,4 @@ gom "github.com/go-martini/martini"
 gom "github.com/golang/oauth2"
 gom "github.com/sorah/oauth2", branch: 'origin/oauth2-compat', as: 'github.com/martini-contrib/oauth2' # https://github.com/martini-contrib/oauth2/pull/36
 gom "github.com/martini-contrib/sessions"
-gom "gopkg.in/yaml.v1"
+gom "github.com/go-yaml/yaml", as:  "gopkg.in/yaml.v1", commit: "v1"
