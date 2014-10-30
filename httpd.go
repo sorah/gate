@@ -240,6 +240,13 @@ func loginRequired() martini.Handler {
 		if isWebsocket(r) {
 			return
 		}
+
+		w.(martini.ResponseWriter).Before(func(w martini.ResponseWriter) {
+			if strings.HasPrefix(w.Header().Get("Location"), oauth2.PathLogin) {
+				s.Set("ReqHost", r.Host)
+			}
+		})
+
 		c.Invoke(oauth2.LoginRequired)
 	}
 }
