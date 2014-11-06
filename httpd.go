@@ -44,8 +44,11 @@ func (s *Server) Run() error {
 	m := martini.Classic()
 
 	cookieStore := sessions.NewCookieStore([]byte(s.Conf.Auth.Session.Key))
-	if domain := s.Conf.Auth.Session.CookieDomain; domain != "" {
-		cookieStore.Options(sessions.Options{Domain: domain})
+	domain := s.Conf.Auth.Session.CookieDomain
+	if domain != "" {
+		cookieStore.Options(sessions.Options{Path: "/", Domain: domain})
+	} else {
+		cookieStore.Options(sessions.Options{Path: "/"})
 	}
 	m.Use(sessions.Sessions("session", cookieStore))
 
