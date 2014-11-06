@@ -50,7 +50,9 @@ func (s *Server) Run() error {
 	} else {
 		cookieStore.Options(sessions.Options{Path: "/"})
 	}
-	m.Use(sessions.Sessions("session", cookieStore))
+	m.Use(sessions.Sessions("_gate", cookieStore))
+
+
 
 	if s.Conf.Auth.Info.Service != noAuthServiceName {
 		a := NewAuthenticator(s.Conf)
