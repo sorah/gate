@@ -57,6 +57,7 @@ func (s *Server) Run() error {
 	if s.Conf.Auth.Info.Service != noAuthServiceName {
 		a := NewAuthenticator(s.Conf)
 		m.Use(a.Handler())
+		m.Use(rewriteBaseDomain(domain))
 		m.Use(loginRequired())
 		m.Use(restrictRequest(s.Conf.Restrictions, a))
 	}
@@ -249,5 +250,37 @@ func loginRequired() martini.Handler {
 		})
 
 		c.Invoke(oauth2.LoginRequired)
+	}
+}
+
+func rewriteBaseDomain(domain string) martini.Handler {
+	return func(s sessions.Session, c martini.Context, w http.ResponseWriter, r *http.Request) {
+		reqhost := s.Get("ReqHost")
+		s.Delete("ReqHost")
+		if reqhost == nil {
+			return
+		}
+
+		if reqhost == r.Host {
+			return
+		}
+
+		// https://github.com/rack/rack/blob/ab172af1b63f0d8e91ce579dd2907c43b96cf82a/lib/rack/request.rb#L66-L78
+		proto := "http"
+		if r.TLS != nil {
+			proto = "https"
+		} else if len(r.Header["X-Forwarded-Ssl"]) > 0 && r.Header["X-Forwarded-Ssl"][0] == "on" {
+			proto = "https"
+		} else if len(r.Header["X-Forwarded-Scheme"]) > 0 {
+			proto = r.Header["X-Forwarded-Scheme"][0]
+		} else if len(r.Header["X-Forwarded-Proto"]) > 0 {
+			proto = strings.Split(r.Header["X-Forwarded-Proto"][0], ",")[0]
+		}
+
+		destination := proto+"://"+reqhost.(string)+r.RequestURI
+		log.Printf("!!!!!!!!!!!!! %s", destination)
+
+		http.Redirect(w, r, destination, 302)
+		log.Printf("Redirect")
 	}
 }
